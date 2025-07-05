@@ -1,7 +1,7 @@
 import os
 import getpass
 from typing import Literal
-
+from langgraph.checkpoint.memory import MemorySaver
 from langchain_groq import ChatGroq
 from langchain_core.tools import tool
 from langchain_core.messages import SystemMessage, HumanMessage, ToolMessage
@@ -98,13 +98,22 @@ agent_builder.add_conditional_edges(
 )
 agent_builder.add_edge("environment", "llm_call")
 
+checkpointer = MemorySaver()
+
 # Compile the agent
-agent = agent_builder.compile()
+agent = agent_builder.compile(checkpointer=checkpointer)
+# Specify a thread
+config = {"configurable": {"thread_id": "1"}}
+# Specify an input
+messages = [HumanMessage(content="Add 3 and 4.")]
 
+# Run
+messages = agent.invoke({"messages": messages},config)
+for m in messages['messages']:
+    m.pretty_print()
 
-# Run the agent
-messages = [HumanMessage(content="subatrct 3 and 4")]
-messages = agent.invoke({"messages": messages})
+messages = [HumanMessage(content="Multiply that by 2.")]
+messages = agent.invoke({"messages": messages}, config)
 
 # Print the result
 for m in messages["messages"]:
